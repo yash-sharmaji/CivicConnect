@@ -1,0 +1,23 @@
+# Ignore dependencies everywhere
+node_modules/
+**/node_modules/
+
+# Next.js
+**/.next/
+
+# Environment files
+**/.env
+**/.env.*
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
