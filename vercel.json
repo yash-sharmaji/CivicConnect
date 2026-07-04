@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "civicai/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "civicai/$1"
+    }
+  ]
+}
