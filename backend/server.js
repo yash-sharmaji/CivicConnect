@@ -30,7 +30,15 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 
 // CORS config
-const clientUrl = process.env.FRONTEND_URL;
+let frontendUrl = process.env.FRONTEND_URL;
+if (frontendUrl && frontendUrl.includes('=')) {
+  const parts = frontendUrl.split('=');
+  frontendUrl = parts[parts.length - 1];
+}
+if (frontendUrl) {
+  frontendUrl = frontendUrl.replace(/^['"]|['"]$/g, '');
+}
+const clientUrl = frontendUrl;
 app.use(cors({
   origin: clientUrl,
   credentials: true
