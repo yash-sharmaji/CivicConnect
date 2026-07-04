@@ -21,6 +21,17 @@ const getApiBase = () => {
       base === 'null') {
     base = null;
   }
+
+  // If the variable was set as "KEY=VALUE" (common env configuration paste error), extract the VALUE
+  if (base && base.includes('=')) {
+    const parts = base.split('=');
+    base = parts[parts.length - 1];
+  }
+
+  // Strip wrapping quotes if any
+  if (base) {
+    base = base.replace(/^['"]|['"]$/g, '');
+  }
   
   if (!base) {
     if (typeof window !== 'undefined') {
