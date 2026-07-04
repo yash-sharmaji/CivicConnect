@@ -114,7 +114,18 @@ export async function refreshAuthSession() {
 }
 
 async function fetchAPI(endpoint, options = {}) {
-  const token = getAuthToken();
+  let token = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token || null;
+  } catch (err) {
+    console.warn('Failed to retrieve token from Supabase client in fetchAPI:', err);
+  }
+
+  if (!token) {
+    token = getAuthToken();
+  }
+
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -303,7 +314,13 @@ export async function addIssue(issueData) {
 
 // Add issue with raw image upload (multipart)
 export async function addIssueWithImage(formData) {
-  const token = getAuthToken();
+  let token = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token || null;
+  } catch (err) {}
+  if (!token) token = getAuthToken();
+
   let response = await fetch(`${API_BASE}/reports`, {
     method: 'POST',
     headers: {
@@ -507,7 +524,13 @@ export async function getStoredUser() {
  * Expects a FormData containing either an 'avatar' file or 'removeAvatar' parameter.
  */
 export async function updateProfileAvatar(formData) {
-  const token = getAuthToken();
+  let token = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token || null;
+  } catch (err) {}
+  if (!token) token = getAuthToken();
+
   let response = await fetch(`${API_BASE}/auth/profile`, {
     method: 'PUT',
     headers: {
@@ -598,7 +621,13 @@ export async function scanImageWithAI(file) {
   const formData = new FormData();
   formData.append('image', file);
 
-  const token = getAuthToken();
+  let token = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token || null;
+  } catch (err) {}
+  if (!token) token = getAuthToken();
+
   const response = await fetch(`${API_BASE}/ai/analyze`, {
     method: 'POST',
     headers: {
