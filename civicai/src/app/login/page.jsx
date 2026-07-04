@@ -87,7 +87,7 @@ function LoginForm() {
 
   const handleOAuth = (provider) => {
     toast('info', 'Connecting OAuth', `Initializing connection to ${provider}...`);
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseUrl = process.env.SUPABASE_URL;
     if (!supabaseUrl) {
       toast('danger', 'Configuration Error', 'Supabase URL is not configured.');
       return;

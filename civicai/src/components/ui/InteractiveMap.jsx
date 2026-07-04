@@ -76,7 +76,7 @@ const loadGoogleMapsScript = (callback) => {
     return;
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const script = document.createElement('script');
   script.id = 'google-maps-script';
   script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;

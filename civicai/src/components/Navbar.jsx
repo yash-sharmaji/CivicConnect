@@ -220,7 +220,7 @@ export const Navbar = () => {
               <Link href="/profile" onClick={() => setIsOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">My Profile</Link>
               <Link href="/settings" onClick={() => setIsOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">Settings</Link>
               
-              {(user.role === 'Admin' || user.role === 'admin' || user.role === 'staff' || (user.email && process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL && user.email.toLowerCase() === process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase())) && (
+              {(user.role === 'Admin' || user.role === 'admin' || user.role === 'staff' || (user.email && process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL && user.email.toLowerCase() === process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase())) && (
                 <Link href="/admin" onClick={() => setIsOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white text-indigo-400">Admin Panel</Link>
               )}
               

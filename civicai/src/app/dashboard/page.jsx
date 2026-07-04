@@ -272,7 +272,7 @@ export default function Dashboard() {
                   Explore Neighbor Map
                 </Button>
               </Link>
-              {user && (user.role === 'Admin' || user.role === 'admin' || user.role === 'staff' || (user.email && process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL && user.email.toLowerCase() === process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase())) && (
+              {user && (user.role === 'Admin' || user.role === 'admin' || user.role === 'staff' || (user.email && process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL && user.email.toLowerCase() === process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase())) && (
                 <Link href="/admin">
                   <Button size="sm" variant="ghost" className="w-full text-indigo-400 hover:text-indigo-300 font-semibold bg-indigo-500/5 hover:bg-indigo-500/10">
                     Switch to Admin View

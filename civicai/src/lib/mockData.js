@@ -7,18 +7,10 @@ import { supabase } from './supabaseClient';
 // ==========================================
 
 const getApiBase = () => {
-  let base = process.env.NEXT_PUBLIC_API_URL || 
-             process.env.NEXT_PUBLIC_API_BASE_URL || 
-             process.env.NEXT_PUBLIC_BACKEND_URL || 
-             process.env.VITE_API_BASE_URL;
+  let base = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   // Discard any literal env placeholder names or invalid values
-  if (base === 'NEXT_PUBLIC_API_URL' || 
-      base === 'NEXT_PUBLIC_API_BASE_URL' || 
-      base === 'NEXT_PUBLIC_BACKEND_URL' || 
-      base === 'VITE_API_BASE_URL' || 
-      base === 'undefined' || 
-      base === 'null') {
+  if (base === 'NEXT_PUBLIC_API_BASE_URL' || base === 'undefined' || base === 'null') {
     base = null;
   }
 
@@ -32,33 +24,17 @@ const getApiBase = () => {
   if (base) {
     base = base.replace(/^['"]|['"]$/g, '');
   }
-  
-  if (!base) {
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname;
-      if (host === 'localhost' || host === '127.0.0.1') {
-        base = "http://localhost:5000/api";
-      } else {
-        base = "https://civicconnect-fcp6.onrender.com/api";
-      }
-    } else {
-      if (process.env.NODE_ENV === 'production') {
-        base = "https://civicconnect-fcp6.onrender.com/api";
-      } else {
-        base = "http://localhost:5000/api";
-      }
+
+  if (base) {
+    if (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
+    if (!base.endsWith('/api')) {
+      base = `${base}/api`;
     }
   }
 
-  if (base.endsWith('/')) {
-    base = base.slice(0, -1);
-  }
-  if (!base.endsWith('/api')) {
-    base = `${base}/api`;
-  }
-
-  console.log('[CivicAI API Base Resolved]:', base);
-  return base;
+  return base || '';
 };
 
 const API_BASE = getApiBase();
@@ -210,7 +186,7 @@ export async function loginUser(email, password) {
       if (u) {
         const metadata = u.user_metadata || {};
         const userEmail = u.email || email;
-        const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+        const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
         const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
         let resolvedRole = 'Member';
         if (isSuper) {
@@ -261,7 +237,7 @@ export async function signupUser(email, password, fullName, locality) {
       if (u) {
         const metadata = u.user_metadata || {};
         const userEmail = u.email || email;
-        const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+        const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
         const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
         let resolvedRole = 'Member';
         if (isSuper) {
@@ -456,7 +432,7 @@ export async function getStoredUser() {
         const u = data.user;
         if (u) {
           const userEmail = u.email || localStorage.getItem('civicai_user_email') || '';
-          const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+          const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
           const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
           
           let resolvedRole = 'Member';
@@ -501,7 +477,7 @@ export async function getStoredUser() {
     if (!u) return null;
 
     const userEmail = u.email || (!isServer ? localStorage.getItem('civicai_user_email') : '');
-    const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+    const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
     const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
     
     let resolvedRole = 'Member';

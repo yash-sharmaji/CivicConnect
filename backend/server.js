@@ -30,7 +30,7 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 
 // CORS config
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const clientUrl = process.env.FRONTEND_URL;
 app.use(cors({
   origin: clientUrl,
   credentials: true

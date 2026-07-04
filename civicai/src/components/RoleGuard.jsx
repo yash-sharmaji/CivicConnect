@@ -8,7 +8,7 @@ export default function RoleGuard({ children, allowedRoles = [] }) {
 
   if (!user) return null;
 
-  const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+  const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
   const isSuper = superAdminEmail && user.email && user.email.toLowerCase() === superAdminEmail.toLowerCase();
   
   const hasAccess = allowedRoles.some((role) => {

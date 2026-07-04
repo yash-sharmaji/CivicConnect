@@ -40,7 +40,7 @@ export const Sidebar = () => {
         {navItems.map((item) => {
           if (item.authRequired && !user) return null;
           if (item.adminOnly) {
-            const isSuper = user?.email && process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL && user.email.toLowerCase() === process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase();
+            const isSuper = user?.email && process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL && user.email.toLowerCase() === process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase();
             const isAdmin = user?.role === 'Admin' || user?.role === 'admin' || user?.role === 'staff' || isSuper;
             if (!isAdmin) return null;
           }

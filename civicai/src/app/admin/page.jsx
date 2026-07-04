@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
     getStoredUser().then((usr) => {
       setCurrentUser(usr);
       if (usr) {
-        const isSuper = usr.email && process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL && usr.email.toLowerCase() === process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase();
+        const isSuper = usr.email && process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL && usr.email.toLowerCase() === process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase();
         const isAdmin = usr.role === 'Admin' || usr.role === 'admin' || usr.role === 'staff' || isSuper;
         if (isAdmin) {
           setAuthorized(true);
@@ -114,7 +114,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDemote = (userId, email) => {
-    const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+    const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
     if (superAdminEmail && email && email.toLowerCase() === superAdminEmail.toLowerCase()) {
       toast('warning', 'Action Forbidden', 'Super Admin cannot be demoted.');
       return;
@@ -463,7 +463,7 @@ export default function AdminDashboardPage() {
           <div className="space-y-3">
             {usersList.length > 0 ? (
               usersList.map((usr) => {
-                const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+                const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
                 const isSuper = superAdminEmail && usr.email && usr.email.toLowerCase() === superAdminEmail.toLowerCase();
                 const isUserAdmin = usr.role === 'Admin' || usr.role === 'admin' || isSuper;
 
