@@ -7,7 +7,25 @@ import { supabase } from './supabaseClient';
 // ==========================================
 
 const getApiBase = () => {
-  let base = process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
+  let base = process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
+  
+  if (!base) {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') {
+        base = "http://localhost:5000/api";
+      } else {
+        base = "https://civicconnect-fcp6.onrender.com/api";
+      }
+    } else {
+      if (process.env.NODE_ENV === 'production') {
+        base = "https://civicconnect-fcp6.onrender.com/api";
+      } else {
+        base = "http://localhost:5000/api";
+      }
+    }
+  }
+
   if (base.endsWith('/')) {
     base = base.slice(0, -1);
   }
