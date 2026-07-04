@@ -7,7 +7,20 @@ import { supabase } from './supabaseClient';
 // ==========================================
 
 const getApiBase = () => {
-  let base = process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
+  let base = process.env.NEXT_PUBLIC_API_URL || 
+             process.env.NEXT_PUBLIC_API_BASE_URL || 
+             process.env.NEXT_PUBLIC_BACKEND_URL || 
+             process.env.VITE_API_BASE_URL;
+
+  // Discard any literal env placeholder names or invalid values
+  if (base === 'NEXT_PUBLIC_API_URL' || 
+      base === 'NEXT_PUBLIC_API_BASE_URL' || 
+      base === 'NEXT_PUBLIC_BACKEND_URL' || 
+      base === 'VITE_API_BASE_URL' || 
+      base === 'undefined' || 
+      base === 'null') {
+    base = null;
+  }
   
   if (!base) {
     if (typeof window !== 'undefined') {
@@ -32,6 +45,8 @@ const getApiBase = () => {
   if (!base.endsWith('/api')) {
     base = `${base}/api`;
   }
+
+  console.log('[CivicAI API Base Resolved]:', base);
   return base;
 };
 
