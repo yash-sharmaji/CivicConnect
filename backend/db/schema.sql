@@ -298,3 +298,139 @@ INSERT INTO public.badges (name, description, icon_url, xp_required) VALUES
 ('Community Pillar', 'Awarded for having 10 of your reported issues successfully resolved.', 'badge_community_pillar.png', 500),
 ('Master Inspector', 'Unlock this legendary status by achieving 1000 total XP points.', 'badge_master_inspector.png', 1000)
 ON CONFLICT (name) DO NOTHING;
+
+-- ==========================================
+-- 7. ROW LEVEL SECURITY (RLS) POLICIES
+-- ==========================================
+
+-- Enable RLS on all tables
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.verifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.xp_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_status_history ENABLE ROW LEVEL SECURITY;
+
+-- 7.1 Users Table Policies
+CREATE POLICY "Allow public read access on profiles" ON public.users 
+    FOR SELECT USING (true);
+CREATE POLICY "Allow users to update their own profile" ON public.users 
+    FOR UPDATE USING (auth.uid() = id);
+
+-- 7.2 Categories Table Policies
+CREATE POLICY "Allow public read access on categories" ON public.categories 
+    FOR SELECT USING (true);
+
+-- 7.3 Reports Table Policies
+CREATE POLICY "Allow public read access on reports" ON public.reports 
+    FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to insert reports" ON public.reports 
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = reporter_id);
+CREATE POLICY "Allow staff and admin to update reports" ON public.reports 
+    FOR UPDATE TO authenticated USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() AND users.role IN ('staff', 'admin')
+        )
+    );
+
+-- 7.4 Report Images Table Policies
+CREATE POLICY "Allow public read access on report images" ON public.report_images 
+    FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to insert report images" ON public.report_images 
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.reports 
+            WHERE reports.id = report_id AND reports.reporter_id = auth.uid()
+        )
+    );
+
+-- 7.5 Comments Table Policies
+CREATE POLICY "Allow public read access on comments" ON public.comments 
+    FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to insert comments" ON public.comments 
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow users to delete/update their own comments" ON public.comments 
+    FOR ALL TO authenticated USING (auth.uid() = user_id);
+
+-- 7.6 Votes Table Policies
+CREATE POLICY "Allow public read access on votes" ON public.votes 
+    FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage votes" ON public.votes 
+    FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- 7.7 Verifications Table Policies
+CREATE POLICY "Allow public read access on verifications" ON public.verifications 
+    FOR SELECT USING (true);
+CREATE POLICY "Allow staff/admin to manage verifications" ON public.verifications 
+    FOR ALL TO authenticated USING (
+        EXISTS (
+            SELECT 1 FROM public.users 
+            WHERE users.id = auth.uid() AND users.role IN ('staff', 'admin')
+        )
+    );
+
+-- 7.8 Notifications Table Policies
+CREATE POLICY "Allow users to view their own notifications" ON public.notifications 
+    FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Allow users to update their own notifications" ON public.notifications 
+    FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+
+-- 7.9 Badges Table Policies
+CREATE POLICY "Allow public read access on badges" ON public.badges 
+    FOR SELECT USING (true);
+
+-- 7.10 User Badges Table Policies
+CREATE POLICY "Allow public read access on user badges" ON public.user_badges 
+    FOR SELECT USING (true);
+
+-- 7.11 XP History Table Policies
+CREATE POLICY "Allow users to view their own XP history" ON public.xp_history 
+    FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+-- 7.12 Report Status History Table Policies
+CREATE POLICY "Allow public read access on status history" ON public.report_status_history 
+    FOR SELECT USING (true);
+
+-- ==========================================
+-- 8. STORAGE BUCKET & RLS POLICIES FOR AVATARS
+-- ==========================================
+
+-- 8.1 Initialize "avatars" Bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('avatars', 'avatars', true, 5242880, ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+ON CONFLICT (id) DO NOTHING;
+
+-- 8.2 Enable Row Level Security on Storage objects
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- 8.3 Storage Policies
+CREATE POLICY "Allow authenticated read avatars" ON storage.objects
+    FOR SELECT TO authenticated USING (bucket_id = 'avatars');
+
+CREATE POLICY "Allow authenticated insert own avatars" ON storage.objects
+    FOR INSERT TO authenticated WITH CHECK (
+        bucket_id = 'avatars' 
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+CREATE POLICY "Allow authenticated update own avatars" ON storage.objects
+    FOR UPDATE TO authenticated USING (
+        bucket_id = 'avatars' 
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    ) WITH CHECK (
+        bucket_id = 'avatars' 
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+CREATE POLICY "Allow authenticated delete own avatars" ON storage.objects
+    FOR DELETE TO authenticated USING (
+        bucket_id = 'avatars' 
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    );

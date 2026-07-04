@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
@@ -9,18 +9,59 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { Shield, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
+import { setAuthToken, clearSession, setClientSession } from '@/lib/mockData';
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
+
+  // Handle Supabase OAuth callback tokens in URL hash fragment
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken) {
+        setIsLoading(true);
+        // Save the tokens in client session storage
+        setAuthToken(accessToken);
+        if (refreshToken) {
+          localStorage.setItem('civicai_refresh_token', refreshToken);
+        }
+
+        // Synchronize state with Supabase client and retrieve user profile
+        const syncSessionAndProfile = async () => {
+          await setClientSession(accessToken, refreshToken || '');
+          await refreshUser();
+        };
+
+        syncSessionAndProfile()
+          .then(() => {
+            setIsLoading(false);
+            toast('success', 'Access Granted', 'Logged in via social account.');
+            // Clear URL hash to keep client address bar clean
+            window.history.replaceState(null, null, window.location.pathname);
+            router.push(redirectUrl);
+          })
+          .catch((err) => {
+            setIsLoading(false);
+            toast('danger', 'OAuth Sync Failed', err.message || 'Could not synchronize session details.');
+            clearSession();
+          });
+      }
+    }
+  }, [router, redirectUrl, refreshUser, toast]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,10 +85,13 @@ export default function LoginPage() {
 
   const handleOAuth = (provider) => {
     toast('info', 'Connecting OAuth', `Initializing connection to ${provider}...`);
-    setTimeout(() => {
-      toast('success', 'Access Granted', 'Logged in via social account.');
-      router.push(redirectUrl);
-    }, 1000);
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      toast('danger', 'Configuration Error', 'Supabase URL is not configured.');
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + '/login');
+    window.location.href = `${supabaseUrl}/auth/v1/authorize?provider=${provider.toLowerCase()}&redirect_to=${redirectUri}`;
   };
 
   return (

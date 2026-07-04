@@ -2,9 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getStoredUser, loginUser, signupUser, logoutUser } from '@/lib/mockData';
+import { getStoredUser, loginUser, signupUser, logoutUser, setAuthToken, clearSession } from '@/lib/mockData';
 import { Button } from '@/components/ui/Button';
 import { ShieldAlert } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -27,28 +28,86 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    refreshUser();
+    let active = true;
+
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
+        if (session) {
+          setAuthToken(session.access_token);
+          localStorage.setItem('civicai_refresh_token', session.refresh_token);
+          const u = await getStoredUser();
+          if (active) {
+            setUser(u);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch initial session:', err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    setLoading(true);
+    initSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[ON AUTH STATE CHANGE]', event, session);
+      if (!active) return;
+      if (session) {
+        setLoading(true);
+        setAuthToken(session.access_token);
+        localStorage.setItem('civicai_refresh_token', session.refresh_token);
+        try {
+          const u = await getStoredUser();
+          if (active) {
+            setUser(u);
+          }
+        } catch (err) {
+          console.warn('Failed to refresh user on auth change:', err);
+          if (active) {
+            setUser(null);
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
+      } else {
+        clearSession();
+        if (active) {
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const data = await loginUser(email, password);
-      await refreshUser();
-      return data;
-    } finally {
+      return await loginUser(email, password);
+    } catch (err) {
       setLoading(false);
+      throw err;
     }
   };
 
   const signup = async (email, password, fullName, locality) => {
     setLoading(true);
     try {
-      const data = await signupUser(email, password, fullName, locality);
-      await refreshUser();
-      return data;
-    } finally {
+      return await signupUser(email, password, fullName, locality);
+    } catch (err) {
       setLoading(false);
+      throw err;
     }
   };
 
@@ -56,9 +115,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       await logoutUser();
-      setUser(null);
-    } finally {
+    } catch (err) {
       setLoading(false);
+      throw err;
     }
   };
 

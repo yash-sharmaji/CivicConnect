@@ -26,12 +26,14 @@ export const authenticateUser = async (req, res, next) => {
       .eq('id', user.id)
       .single();
 
+    req.authUser = user;
+
     if (profileError || !profile) {
       // Fallback in case Postgres sync triggers haven't fired or profile isn't queried yet
       req.user = {
         id: user.id,
         email: user.email,
-        full_name: user.user_metadata?.full_name || 'Citizen',
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'Citizen',
         role: 'citizen',
         xp: 0
       };

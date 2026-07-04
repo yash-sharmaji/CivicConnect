@@ -76,7 +76,7 @@ const loadGoogleMapsScript = (callback) => {
     return;
   }
 
-  const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const script = document.createElement('script');
   script.id = 'google-maps-script';
   script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
@@ -187,7 +187,7 @@ export const InteractiveMap = ({
               icon: {
                 path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
                 scale: 5,
-                fillColor: "#6366f1",
+                fillColor: "#10b981",
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 1
@@ -240,7 +240,7 @@ export const InteractiveMap = ({
         icon: {
           path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
           scale: 5,
-          fillColor: "#6366f1",
+          fillColor: "#10b981",
           fillOpacity: 1,
           strokeColor: "#ffffff",
           strokeWeight: 1

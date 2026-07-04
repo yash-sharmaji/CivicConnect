@@ -13,7 +13,8 @@ import { useAuth } from '@/components/AuthContext';
 import { 
   getStoredIssues, 
   submitAdminRequest, 
-  getAdminRequests 
+  getAdminRequests,
+  updateProfileAvatar
 } from '@/lib/mockData';
 import { 
   User, 
@@ -100,13 +101,77 @@ export default function ProfilePage() {
       });
   };
 
-  const handleSaveProfile = (e) => {
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast('warning', 'File Too Large', 'The selected profile picture exceeds the 5MB size limit.');
+      return;
+    }
+
+    // Validate type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast('warning', 'Invalid File Type', 'Only JPG, JPEG, PNG, and WEBP images are allowed.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      await updateProfileAvatar(formData);
+      await refreshUser();
+      toast('success', 'Avatar Updated', 'Your profile picture has been successfully uploaded.');
+    } catch (err) {
+      toast('danger', 'Upload Failed', err.message || 'Could not upload profile picture.');
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (window.confirm('Are you sure you want to remove your profile picture?')) {
+      setIsUploadingAvatar(true);
+      const formData = new FormData();
+      formData.append('removeAvatar', 'true');
+
+      try {
+        await updateProfileAvatar(formData);
+        await refreshUser();
+        toast('success', 'Avatar Removed', 'Your profile picture has been removed.');
+      } catch (err) {
+        toast('danger', 'Removal Failed', err.message || 'Could not remove profile picture.');
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (!editName.trim()) {
+      toast('warning', 'Missing Name', 'Please provide a valid full name.');
+      return;
+    }
     setIsSavingProfile(true);
-    setTimeout(() => {
-      setIsSavingProfile(false);
+    try {
+      const formData = new FormData();
+      formData.append('fullName', editName.trim());
+      await updateProfileAvatar(formData);
+      await refreshUser();
       toast('success', 'Profile Updated', 'Personal information saved successfully.');
-    }, 800);
+    } catch (err) {
+      toast('danger', 'Update Failed', err.message || 'Could not save profile changes.');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleChangePassword = (e) => {
@@ -424,7 +489,52 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="text-sm font-bold">Personal Information</CardTitle>
               </CardHeader>
-              <CardContent className="pt-2">
+              <CardContent className="pt-2 space-y-6">
+                {/* Profile Picture Upload Section */}
+                <div className="flex items-center gap-4 pb-4 border-b border-white/5">
+                  <div className="h-16 w-16 rounded-full overflow-hidden border border-white/10 bg-[#0c0c0e] flex-shrink-0 relative group">
+                    <img src={user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    {isUploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] text-white font-bold">
+                        Updating...
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex gap-2">
+                      <Button
+                        size="xs"
+                        variant="primary"
+                        onClick={() => document.getElementById('avatar-file-input').click()}
+                        disabled={isUploadingAvatar}
+                      >
+                        Change Picture
+                      </Button>
+                      {user?.avatar && !user.avatar.includes('dicebear.com') && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          onClick={handleRemoveAvatar}
+                          disabled={isUploadingAvatar}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-500">
+                      JPG, JPEG, PNG, or WEBP. Max size 5MB.
+                    </p>
+                    <input
+                      id="avatar-file-input"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleAvatarFileChange}
+                    />
+                  </div>
+                </div>
+
                 <form onSubmit={handleSaveProfile} className="space-y-4">
                   <Input
                     label="Full Name"

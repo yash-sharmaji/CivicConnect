@@ -89,6 +89,28 @@ const server = app.listen(PORT, () => {
   console.log(` Local URL: http://localhost:${PORT}`);
   console.log(` Connected Client Allowed: ${clientUrl}`);
   console.log(`=================================================`);
+
+  // Recursively print all registered Express routes
+  console.log('\n--- REGISTERED ROUTE MAP ---');
+  const printRoutes = (stack, parentPath = '') => {
+    stack.forEach((layer) => {
+      if (layer.route) {
+        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+        console.log(`  ${methods.padEnd(8)} -> ${parentPath}${layer.route.path}`);
+      } else if (layer.name === 'router' && layer.handle?.stack) {
+        let base = '';
+        if (layer.regexp) {
+          const match = layer.regexp.toString().match(/^\/\^\\(\/[a-zA-Z0-9_-]+)/);
+          if (match) {
+            base = match[1];
+          }
+        }
+        printRoutes(layer.handle.stack, parentPath + base);
+      }
+    });
+  };
+  printRoutes(app._router.stack);
+  console.log('----------------------------\n');
 });
 
 server.on('error', (err) => {

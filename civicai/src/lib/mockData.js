@@ -1,5 +1,6 @@
 // CivicAI Frontend API Integration Layer
 // Replaces static localStorage mock data with real Express API requests
+import { supabase } from './supabaseClient';
 
 // ==========================================
 // API UTILITIES
@@ -8,6 +9,22 @@
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const isServer = typeof window === 'undefined';
+
+export async function setClientSession(accessToken, refreshToken) {
+  if (isServer) return;
+  try {
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+    } else {
+      await supabase.auth.signOut();
+    }
+  } catch (err) {
+    console.warn('Failed to update supabase auth client session:', err.message);
+  }
+}
 
 export function getAuthToken() {
   if (isServer) return null;
@@ -32,7 +49,40 @@ export function setAuthToken(token) {
 export function clearSession() {
   if (isServer) return;
   localStorage.removeItem('civicai_token');
+  localStorage.removeItem('civicai_refresh_token');
   localStorage.removeItem('civicai_user_profile');
+}
+
+export async function refreshAuthSession() {
+  if (isServer) return null;
+  const refreshToken = localStorage.getItem('civicai_refresh_token');
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ refreshToken })
+    });
+
+    if (!response.ok) {
+      throw new Error('Refresh request failed');
+    }
+
+    const data = await response.json();
+    if (data?.session?.access_token) {
+      setAuthToken(data.session.access_token);
+      localStorage.setItem('civicai_refresh_token', data.session.refresh_token);
+      await setClientSession(data.session.access_token, data.session.refresh_token);
+      return data.session.access_token;
+    }
+  } catch (err) {
+    console.warn('Failed to refresh authentication session:', err.message);
+    clearSession();
+  }
+  return null;
 }
 
 async function fetchAPI(endpoint, options = {}) {
@@ -43,10 +93,28 @@ async function fetchAPI(endpoint, options = {}) {
     ...options.headers
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  let response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers
   });
+
+  if (response.status === 401) {
+    const errData = await response.clone().json().catch(() => ({}));
+    if (errData.error === 'Invalid or expired authentication session') {
+      console.log('Authentication session expired. Attempting token refresh...');
+      const newToken = await refreshAuthSession();
+      if (newToken) {
+        const retryHeaders = {
+          ...headers,
+          'Authorization': `Bearer ${newToken}`
+        };
+        response = await fetch(`${API_BASE}${endpoint}`, {
+          ...options,
+          headers: retryHeaders
+        });
+      }
+    }
+  }
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
@@ -69,7 +137,37 @@ export async function loginUser(email, password) {
   if (data?.session?.access_token) {
     setAuthToken(data.session.access_token);
     if (!isServer) {
+      localStorage.setItem('civicai_refresh_token', data.session.refresh_token);
       localStorage.setItem('civicai_user_email', email);
+      await setClientSession(data.session.access_token, data.session.refresh_token);
+      
+      const u = data.user;
+      if (u) {
+        const metadata = u.user_metadata || {};
+        const userEmail = u.email || email;
+        const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+        const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
+        let resolvedRole = 'Member';
+        if (isSuper) {
+          resolvedRole = 'Admin';
+        } else if (metadata.role) {
+          resolvedRole = metadata.role.toLowerCase() === 'admin' ? 'Admin' : metadata.role;
+        }
+        const stats = {
+          id: u.id,
+          name: metadata.full_name || 'Citizen',
+          email: userEmail,
+          avatar: metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+          points: u.xp || 0,
+          rank: getRankFromXP(u.xp || 0),
+          issuesReported: u.reports?.length || 0,
+          issuesResolved: u.reports?.filter((r) => r.status === 'resolved').length || 0,
+          verificationsCount: u.verifications?.length || 0,
+          badges: [],
+          role: resolvedRole
+        };
+        localStorage.setItem('civicai_user_profile', JSON.stringify(stats));
+      }
     }
   }
   return data;
@@ -90,7 +188,37 @@ export async function signupUser(email, password, fullName, locality) {
   if (data?.session?.access_token) {
     setAuthToken(data.session.access_token);
     if (!isServer) {
+      localStorage.setItem('civicai_refresh_token', data.session.refresh_token);
       localStorage.setItem('civicai_user_email', email);
+      await setClientSession(data.session.access_token, data.session.refresh_token);
+      
+      const u = data.user;
+      if (u) {
+        const metadata = u.user_metadata || {};
+        const userEmail = u.email || email;
+        const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+        const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
+        let resolvedRole = 'Member';
+        if (isSuper) {
+          resolvedRole = 'Admin';
+        } else if (metadata.role) {
+          resolvedRole = metadata.role.toLowerCase() === 'admin' ? 'Admin' : metadata.role;
+        }
+        const stats = {
+          id: u.id,
+          name: metadata.full_name || 'Citizen',
+          email: userEmail,
+          avatar: metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+          points: u.xp || 0,
+          rank: getRankFromXP(u.xp || 0),
+          issuesReported: u.reports?.length || 0,
+          issuesResolved: u.reports?.filter((r) => r.status === 'resolved').length || 0,
+          verificationsCount: u.verifications?.length || 0,
+          badges: [],
+          role: resolvedRole
+        };
+        localStorage.setItem('civicai_user_profile', JSON.stringify(stats));
+      }
     }
   }
   return data;
@@ -103,6 +231,7 @@ export async function logoutUser() {
     console.warn('Backend logout failed/ignored:', err.message);
   } finally {
     clearSession();
+    await setClientSession(null, null);
   }
 }
 
@@ -147,13 +276,30 @@ export async function addIssue(issueData) {
 // Add issue with raw image upload (multipart)
 export async function addIssueWithImage(formData) {
   const token = getAuthToken();
-  const response = await fetch(`${API_BASE}/reports`, {
+  let response = await fetch(`${API_BASE}/reports`, {
     method: 'POST',
     headers: {
       ...(token && { 'Authorization': `Bearer ${token}` })
     },
     body: formData
   });
+
+  if (response.status === 401) {
+    const errData = await response.clone().json().catch(() => ({}));
+    if (errData.error === 'Invalid or expired authentication session') {
+      console.log('Authentication session expired. Attempting token refresh...');
+      const newToken = await refreshAuthSession();
+      if (newToken) {
+        response = await fetch(`${API_BASE}/reports`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${newToken}`
+          },
+          body: formData
+        });
+      }
+    }
+  }
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
@@ -220,6 +366,63 @@ export async function getStoredUser() {
     }
     return null;
   }
+
+  // Fast-path: return cached profile immediately for instant UI render
+  let cachedProfile = null;
+  if (!isServer) {
+    const cached = localStorage.getItem('civicai_user_profile');
+    if (cached) {
+      try {
+        cachedProfile = JSON.parse(cached);
+      } catch (e) {}
+    }
+  }
+
+  if (cachedProfile) {
+    // Refresh cache in the background
+    fetchAPI('/auth/profile')
+      .then((data) => {
+        const u = data.user;
+        if (u) {
+          const userEmail = u.email || localStorage.getItem('civicai_user_email') || '';
+          const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
+          const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
+          
+          let resolvedRole = 'Member';
+          if (isSuper) {
+            resolvedRole = 'Admin';
+          } else if (u.role) {
+            resolvedRole = u.role.toLowerCase() === 'admin' ? 'Admin' : u.role;
+          }
+
+          const stats = {
+            id: u.id,
+            name: u.full_name || 'Citizen',
+            email: userEmail || '',
+            avatar: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+            points: u.xp || 0,
+            rank: getRankFromXP(u.xp || 0),
+            issuesReported: u.reports?.length || 0,
+            issuesResolved: u.reports?.filter((r) => r.status === 'resolved').length || 0,
+            verificationsCount: u.verifications?.length || 0,
+            badges: u.user_badges?.map((ub) => ({
+              id: ub.badges.id,
+              name: ub.badges.name,
+              icon: 'Award',
+              description: ub.badges.description,
+              dateEarned: new Date(ub.awarded_at).toISOString().split('T')[0]
+            })) || [],
+            role: resolvedRole
+          };
+          localStorage.setItem('civicai_user_profile', JSON.stringify(stats));
+        }
+      })
+      .catch((err) => {
+        console.warn('Background profile refresh failed:', err.message);
+      });
+    return cachedProfile;
+  }
+
   try {
     const data = await fetchAPI('/auth/profile');
     const u = data.user;
@@ -230,12 +433,10 @@ export async function getStoredUser() {
     const superAdminEmail = process.env.VITE_INITIAL_SUPER_ADMIN_EMAIL;
     const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
     
-    // Default role is Member. Super admin always maps to Admin.
     let resolvedRole = 'Member';
     if (isSuper) {
       resolvedRole = 'Admin';
     } else if (u.role) {
-      // Normalize role capitalization to match request expectations
       resolvedRole = u.role.toLowerCase() === 'admin' ? 'Admin' : u.role;
     }
 
@@ -271,6 +472,62 @@ export async function getStoredUser() {
     }
     return null;
   }
+}
+
+/**
+ * Updates the user's profile picture or deletes it (reverting to default).
+ * Expects a FormData containing either an 'avatar' file or 'removeAvatar' parameter.
+ */
+export async function updateProfileAvatar(formData) {
+  const token = getAuthToken();
+  let response = await fetch(`${API_BASE}/auth/profile`, {
+    method: 'PUT',
+    headers: {
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    },
+    body: formData
+  });
+
+  if (response.status === 401) {
+    const errData = await response.clone().json().catch(() => ({}));
+    if (errData.error === 'Invalid or expired authentication session') {
+      console.log('Authentication session expired. Attempting token refresh...');
+      const newToken = await refreshAuthSession();
+      if (newToken) {
+        response = await fetch(`${API_BASE}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${newToken}`
+          },
+          body: formData
+        });
+      }
+    }
+  }
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error || 'Failed to update profile avatar');
+  }
+
+  const data = await response.json();
+  
+  // Refresh cached local storage stats
+  if (data?.user) {
+    const u = data.user;
+    if (!isServer) {
+      const cached = localStorage.getItem('civicai_user_profile');
+      if (cached) {
+        try {
+          const stats = JSON.parse(cached);
+          stats.avatar = u.avatar;
+          localStorage.setItem('civicai_user_profile', JSON.stringify(stats));
+        } catch (e) {}
+      }
+    }
+  }
+
+  return data;
 }
 
 // ==========================================

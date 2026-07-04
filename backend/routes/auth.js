@@ -1,7 +1,8 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { signup, login, logout, getProfile } from '../controllers/authController.js';
+import { signup, login, logout, getProfile, updateProfile, refreshSession } from '../controllers/authController.js';
 import { authenticateUser } from '../middleware/auth.js';
+import { uploadAvatar } from '../middleware/upload.js';
 import { validateRequest } from '../middleware/validator.js';
 
 const router = express.Router();
@@ -34,7 +35,11 @@ router.post(
 // Logout route
 router.post('/logout', logout);
 
+// Session refresh route
+router.post('/refresh', refreshSession);
+
 // Profile route (Protected)
 router.get('/profile', authenticateUser, getProfile);
+router.put('/profile', authenticateUser, uploadAvatar.single('avatar'), updateProfile);
 
 export default router;

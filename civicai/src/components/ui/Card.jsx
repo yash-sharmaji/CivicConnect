@@ -12,7 +12,7 @@ export const Card = ({
       className={`
         glass-panel rounded-2xl p-5 overflow-hidden relative z-10
         ${hoverable ? 'glass-panel-hover' : ''}
-        ${glow ? 'shadow-[0_0_50px_-12px_rgba(99,102,241,0.15)]' : ''}
+        ${glow ? 'card-glow' : ''}
         ${className}
       `}
       {...props}
