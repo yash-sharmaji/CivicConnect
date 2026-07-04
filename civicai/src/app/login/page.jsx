@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
@@ -11,7 +11,7 @@ import { Shield, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { setAuthToken, clearSession, setClientSession } from '@/lib/mockData';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -192,5 +192,17 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-[#07070a] text-white">
+        <div className="animate-pulse text-sm text-gray-400 font-medium">Loading login form...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
