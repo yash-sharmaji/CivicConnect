@@ -78,7 +78,7 @@ export const Navbar = () => {
               <Shield className="h-5 w-5 text-white" />
             </div>
             <span className="text-lg font-bold tracking-tight text-white">
-              Civic<span className="text-indigo-400">AI</span>
+              Civic<span className="text-emerald-400">Connect</span>
             </span>
           </Link>
 

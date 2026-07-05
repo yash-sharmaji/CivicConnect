@@ -76,7 +76,7 @@ function LoginForm() {
     login(email, password)
       .then(() => {
         setIsLoading(false);
-        toast('success', 'Welcome Back!', 'Successfully logged in to CivicAI.');
+        toast('success', 'Welcome Back!', 'Successfully logged in to Civic Connect.');
         router.push(redirectUrl);
       })
       .catch((err) => {
@@ -106,7 +106,7 @@ function LoginForm() {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/20 mb-3">
             <Shield className="h-6 w-6 text-white" />
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Access CivicAI Portal</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">Access <span className="text-emerald-400">Civic Connect</span> Portal</h2>
           <p className="text-xs text-gray-500 font-medium mt-1">See it. Snap it. Solve it.</p>
         </div>
 

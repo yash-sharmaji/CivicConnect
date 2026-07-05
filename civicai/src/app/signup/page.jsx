@@ -51,7 +51,7 @@ export default function SignupPage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/20 mb-3">
             <Shield className="h-6 w-6 text-white" />
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Join CivicAI</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">Join <span className="text-emerald-400">Civic Connect</span></h2>
           <p className="text-xs text-gray-500 font-medium mt-1">Start contributing to your neighborhood</p>
         </div>
 

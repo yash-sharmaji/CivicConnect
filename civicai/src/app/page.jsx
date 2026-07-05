@@ -72,7 +72,7 @@ export default function LandingPage() {
     {
       num: "02",
       title: "AI Diagnostic Scan",
-      desc: "CivicAI analyzes the image, detects the issue category, gauges severity, and schedules a ticket."
+      desc: "Civic Connect analyzes the image, detects the issue category, gauges severity, and schedules a ticket."
     },
     {
       num: "03",
@@ -95,7 +95,7 @@ export default function LandingPage() {
 
   const testimonials = [
     {
-      quote: "CivicAI changed how our neighborhood interacts with City Hall. A pothole that remained unfilled for months was patched in 48 hours after launching a verified report.",
+      quote: "Civic Connect changed how our neighborhood interacts with City Hall. A pothole that remained unfilled for months was patched in 48 hours after launching a verified report.",
       author: "Robert K. Vance",
       role: "Oak Hills Neighborhood Assoc.",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert"
@@ -111,7 +111,7 @@ export default function LandingPage() {
   const faqs = [
     {
       q: "How does the AI analyze my uploaded photo?",
-      a: "CivicAI uses a fine-tuned vision language model. When you upload a photo, the system processes it to identify specific structures (e.g. concrete decay, asphalt cracking, lighting malfunctions). It estimates the hazard severity based on size, location relative to pathways, and general public danger."
+      a: "Civic Connect uses a fine-tuned vision language model. When you upload a photo, the system processes it to identify specific structures (e.g. concrete decay, asphalt cracking, lighting malfunctions). It estimates the hazard severity based on size, location relative to pathways, and general public danger."
     },
     {
       q: "Do I need to sign up to report an issue?",
@@ -123,7 +123,7 @@ export default function LandingPage() {
     },
     {
       q: "Can this system integrate with municipal software?",
-      a: "Yes! CivicAI is architected with modern JSON-REST interfaces, allowing easy webhooks and integrations into typical city service logs, Salesforce City Cloud, and utility dispatch dashboards."
+      a: "Yes! Civic Connect is architected with modern JSON-REST interfaces, allowing easy webhooks and integrations into typical city service logs, Salesforce City Cloud, and utility dispatch dashboards."
     }
   ];
 
@@ -164,7 +164,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto max-w-2xl text-base sm:text-lg md:text-xl text-gray-400 leading-relaxed mb-10"
           >
-            CivicAI empowers communities to identify and repair infrastructure bottlenecks. Log hazards, verify neighborhood issues, and track resolutions in real-time with AI diagnostics.
+            Civic Connect empowers communities to identify and repair infrastructure bottlenecks. Log hazards, verify neighborhood issues, and track resolutions in real-time with AI diagnostics.
           </motion.p>
 
           <motion.div
@@ -344,7 +344,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4.5 h-4.5 text-indigo-500" />
-            <span className="font-bold text-white">CivicAI</span>
+            <span className="font-bold text-white">Civic<span className="text-emerald-400">Connect</span></span>
             <span>© 2026. All rights reserved.</span>
           </div>
           <div className="flex gap-6">
