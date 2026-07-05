@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function run() {
-  const dbUrl = process.env.DATABASE_URL;
+  const dbUrl = process.env.DATABASE_URL ? decodeURIComponent(process.env.DATABASE_URL) : undefined;
 
   if (!dbUrl) {
     console.error('========================================================');

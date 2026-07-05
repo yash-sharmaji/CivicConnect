@@ -434,3 +434,46 @@ CREATE POLICY "Allow authenticated delete own avatars" ON storage.objects
         bucket_id = 'avatars' 
         AND (storage.foldername(name))[1] = auth.uid()::text
     );
+
+-- ==========================================
+-- 9. ADMIN REQUESTS TABLE & POLICIES
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.admin_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.admin_requests ENABLE ROW LEVEL SECURITY;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_admin_requests_user ON public.admin_requests (user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_requests_status ON public.admin_requests (status);
+
+-- Policies
+CREATE POLICY "Allow users to view their own admin requests" ON public.admin_requests
+    FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "Allow users to submit admin requests" ON public.admin_requests
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Allow staff and admin to view all admin requests" ON public.admin_requests
+    FOR SELECT TO authenticated USING (
+        EXISTS (
+            SELECT 1 FROM public.users
+            WHERE users.id = auth.uid() AND users.role IN ('staff', 'admin')
+        )
+    );
+
+CREATE POLICY "Allow admin to update admin requests" ON public.admin_requests
+    FOR UPDATE TO authenticated USING (
+        EXISTS (
+            SELECT 1 FROM public.users
+            WHERE users.id = auth.uid() AND users.role = 'admin'
+        )
+    );
