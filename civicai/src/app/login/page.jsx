@@ -156,7 +156,7 @@ function LoginForm() {
             </div>
 
             {/* Social Logins */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="w-full">
               <Button
                 variant="outline"
                 size="sm"
@@ -166,22 +166,9 @@ function LoginForm() {
                     <path d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.529-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.107C18.29 1.18 15.48 0 12.24 0 5.58 0 0 5.37 0 12s5.58 12 12.24 12c6.96 0 11.57-4.89 11.57-11.79 0-.795-.085-1.4-.195-1.925H12.24z"/>
                   </svg>
                 }
-                className="bg-white/5 border-white/5"
+                className="w-full bg-white/5 border-white/5 justify-center"
               >
-                Google
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleOAuth('Facebook')}
-                leftIcon={
-                  <svg className="w-4 h-4 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1V12h3v3h-3v6.8c4.56-.93 8-4.96 8-9.8z"/>
-                  </svg>
-                }
-                className="bg-white/5 border-white/5"
-              >
-                Facebook
+                Login using Google
               </Button>
             </div>
           </CardContent>
