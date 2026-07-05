@@ -41,10 +41,6 @@ export const authenticateUser = async (req, res, next) => {
       req.user = profile;
     }
 
-    if (req.user && req.user.email && req.user.email.toLowerCase() === 'ysharma8502@gmail.com') {
-      req.user.role = 'admin';
-    }
-
     next();
   } catch (err) {
     console.error('Authentication middleware error:', err);

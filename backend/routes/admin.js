@@ -5,15 +5,32 @@ import {
   updateStatus, 
   getAnalytics, 
   manageUsers, 
-  updateUserRole 
+  updateUserRole,
+  getAdminRequests,
+  submitAdminRequest,
+  updateAdminRequestStatus,
+  promoteUser,
+  demoteUser
 } from '../controllers/adminController.js';
 import { authenticateUser, authorizeRoles } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validator.js';
 
 const router = express.Router();
 
-// Enforce auth & elevated roles for all admin endpoints
+// Enforce authentication for all admin endpoints
 router.use(authenticateUser);
+
+// 6. Submit an admin request (Available to citizens)
+router.post(
+  '/requests',
+  [
+    body('reason').trim().isLength({ min: 10 }).withMessage('Request reason must be at least 10 characters long'),
+    validateRequest
+  ],
+  submitAdminRequest
+);
+
+// Enforce elevated roles for the remaining admin operations
 router.use(authorizeRoles('staff', 'admin'));
 
 // 1. Fetch portal analytics
@@ -53,5 +70,25 @@ router.patch(
   ],
   updateUserRole
 );
+
+// 7. Fetch admin requests (Admin only)
+router.get('/requests', authorizeRoles('admin'), getAdminRequests);
+
+// 8. Update request status (Admin only)
+router.patch(
+  '/requests/:requestId',
+  authorizeRoles('admin'),
+  [
+    body('status').isIn(['approved', 'rejected']).withMessage('Invalid status update'),
+    validateRequest
+  ],
+  updateAdminRequestStatus
+);
+
+// 9. Promote user (Admin only)
+router.post('/users/:userId/promote', authorizeRoles('admin'), promoteUser);
+
+// 10. Demote user (Admin only)
+router.post('/users/:userId/demote', authorizeRoles('admin'), demoteUser);
 
 export default router;

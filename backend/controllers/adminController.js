@@ -201,3 +201,196 @@ export const updateUserRole = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Get all admin requests
+ */
+export const getAdminRequests = async (req, res, next) => {
+  try {
+    const { data: requests, error } = await supabaseAdmin
+      .from('admin_requests')
+      .select(`
+        *,
+        users(full_name, email)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const formatted = requests.map(r => ({
+      id: r.id,
+      name: r.users?.full_name || 'Citizen',
+      email: r.users?.email || '',
+      reason: r.reason,
+      createdAt: r.created_at,
+      status: r.status
+    }));
+
+    res.status(200).json(formatted);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Submit an admin request
+ */
+export const submitAdminRequest = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    // Check if user already has a pending request
+    const { data: existing, error: checkErr } = await supabaseAdmin
+      .from('admin_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ error: 'You already have a pending admin request.' });
+    }
+
+    const { data: newRequest, error } = await supabaseAdmin
+      .from('admin_requests')
+      .insert({
+        user_id: userId,
+        reason,
+        status: 'pending'
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json(newRequest);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Update request status (with Auth user_metadata synchronization)
+ */
+export const updateAdminRequestStatus = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const { status } = req.body; // 'approved' or 'rejected'
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status update' });
+    }
+
+    // Get the request details to find the user_id
+    const { data: request, error: fetchErr } = await supabaseAdmin
+      .from('admin_requests')
+      .select('user_id')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchErr || !request) {
+      return res.status(404).json({ error: 'Admin request not found' });
+    }
+
+    const targetUserId = request.user_id;
+
+    // Update request status
+    const { error: updateErr } = await supabaseAdmin
+      .from('admin_requests')
+      .update({ status })
+      .eq('id', requestId);
+
+    if (updateErr) throw updateErr;
+
+    // If approved, update target user's role to 'admin' in database and Auth metadata
+    if (status === 'approved') {
+      const { error: roleErr } = await supabaseAdmin
+        .from('users')
+        .update({ role: 'admin' })
+        .eq('id', targetUserId);
+      if (roleErr) throw roleErr;
+
+      // Update auth user metadata
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+          user_metadata: { role: 'admin' }
+        });
+      } catch (authErr) {
+        console.warn('[AUTH METADATA UPDATE FAILED]', authErr.message);
+      }
+    }
+
+    res.status(200).json({ message: 'Request updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Promote user to admin
+ */
+export const promoteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    const { error: roleErr } = await supabaseAdmin
+      .from('users')
+      .update({ role: 'admin' })
+      .eq('id', userId);
+    if (roleErr) throw roleErr;
+
+    // Update auth user metadata
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { role: 'admin' }
+      });
+    } catch (authErr) {
+      console.warn('[AUTH METADATA UPDATE FAILED]', authErr.message);
+    }
+
+    res.status(200).json({ message: 'User promoted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Demote user to citizen
+ */
+export const demoteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if target user is super admin
+    const { data: targetUser } = await supabaseAdmin
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
+    if (targetUser && superAdminEmail && targetUser.email.toLowerCase() === superAdminEmail.toLowerCase()) {
+      return res.status(400).json({ error: 'Super Admin cannot be demoted.' });
+    }
+
+    const { error: roleErr } = await supabaseAdmin
+      .from('users')
+      .update({ role: 'citizen' })
+      .eq('id', userId);
+    if (roleErr) throw roleErr;
+
+    // Update auth user metadata
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { role: 'citizen' }
+      });
+    } catch (authErr) {
+      console.warn('[AUTH METADATA UPDATE FAILED]', authErr.message);
+    }
+
+    res.status(200).json({ message: 'User demoted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};

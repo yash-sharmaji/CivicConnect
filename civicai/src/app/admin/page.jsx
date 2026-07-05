@@ -54,8 +54,7 @@ export default function AdminDashboardPage() {
     getStoredUser().then((usr) => {
       setCurrentUser(usr);
       if (usr) {
-        const isSuper = usr.email && process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL && usr.email.toLowerCase() === process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL.toLowerCase();
-        const isAdmin = usr.role === 'Admin' || usr.role === 'admin' || usr.role === 'staff' || isSuper;
+        const isAdmin = usr.role === 'Admin' || usr.role === 'admin' || usr.role === 'staff';
         if (isAdmin) {
           setAuthorized(true);
         } else {
@@ -463,9 +462,9 @@ export default function AdminDashboardPage() {
           <div className="space-y-3">
             {usersList.length > 0 ? (
               usersList.map((usr) => {
-                const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-                const isSuper = superAdminEmail && usr.email && usr.email.toLowerCase() === superAdminEmail.toLowerCase();
-                const isUserAdmin = usr.role === 'Admin' || usr.role === 'admin' || isSuper;
+                 const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
+                 const isSuper = superAdminEmail && usr.email && usr.email.toLowerCase() === superAdminEmail.toLowerCase();
+                 const isUserAdmin = usr.role === 'Admin' || usr.role === 'admin';
 
                 return (
                   <div key={usr.id} className="p-4 bg-white/2 border border-white/5 rounded-xl flex items-center justify-between gap-4">

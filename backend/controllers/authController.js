@@ -91,26 +91,49 @@ const ensureUserProfile = async (userId, authUser) => {
     throw new Error('Supabase Admin client not initialized');
   }
 
-  // Check if profile exists
+  // Check if profile exists (selecting role and email for verification)
   const { data: profile, error } = await supabaseAdmin
     .from('users')
-    .select('avatar_url, full_name')
+    .select('id, email, role, avatar_url, full_name')
     .eq('id', userId)
     .maybeSingle();
 
+  const email = authUser?.email || profile?.email || '';
+  const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = email && superAdminEmail && email.toLowerCase() === superAdminEmail.toLowerCase();
+
+  // If profile exists, check if they are the super admin and need a one-time migration
   if (profile) {
+    if (isSuperAdmin && profile.role !== 'admin') {
+      console.log(`[AUTH] Migrating super admin user ${userId} to admin role...`);
+      const { data: updatedProfile, error: updateErr } = await supabaseAdmin
+        .from('users')
+        .update({ role: 'admin' })
+        .eq('id', userId)
+        .select('*')
+        .single();
+      
+      // Keep auth metadata in sync
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: { role: 'admin' }
+        });
+      } catch (authErr) {
+        console.warn('[AUTH METADATA UPDATE FAILED]', authErr.message);
+      }
+
+      if (!updateErr && updatedProfile) {
+        return updatedProfile;
+      }
+    }
     return profile;
   }
 
   // Profile does not exist, create it from auth user details
   console.log(`[AUTH] Profile row missing for user ${userId}. Automatically creating it...`);
   const metadata = authUser?.user_metadata || {};
-  const email = authUser?.email || '';
   const fullName = metadata.full_name || metadata.name || 'Citizen';
   const avatarUrl = metadata.avatar_url || metadata.picture || null;
-
-  const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-  const isSuperAdmin = email && superAdminEmail && email.toLowerCase() === superAdminEmail.toLowerCase();
   const resolvedRole = isSuperAdmin ? 'admin' : (metadata.role || 'citizen');
 
   const { data: newProfile, error: insertErr } = await supabaseAdmin
@@ -123,12 +146,23 @@ const ensureUserProfile = async (userId, authUser) => {
       avatar_url: avatarUrl,
       xp: 0
     }, { onConflict: 'id' })
-    .select('avatar_url, full_name')
+    .select('avatar_url, full_name, role')
     .single();
 
   if (insertErr || !newProfile) {
     console.error(`[AUTH ERROR] Failed to auto-create user profile row via upsert:`, insertErr);
     throw new Error(`Profile auto-creation failed: ${insertErr?.message}`);
+  }
+
+  // If newly created super admin, sync metadata role
+  if (isSuperAdmin) {
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { role: 'admin' }
+      });
+    } catch (authErr) {
+      console.warn('[AUTH METADATA UPDATE FAILED]', authErr.message);
+    }
   }
 
   return newProfile;

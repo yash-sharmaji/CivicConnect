@@ -223,9 +223,7 @@ export default function ProfilePage() {
   const inProgressCount = userIssues.filter(i => i.status === 'in-progress').length;
   const resolvedCount = userIssues.filter(i => i.status === 'resolved').length;
   
-  const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-  const isSuper = user?.email && superAdminEmail && user.email.toLowerCase() === superAdminEmail.toLowerCase();
-  const isAdmin = user?.role === 'Admin' || user?.role === 'admin' || isSuper;
+  const isAdmin = user?.role === 'Admin' || user?.role === 'admin';
 
   // Find latest request status
   const latestRequest = adminRequests.length > 0 ? adminRequests[adminRequests.length - 1] : null;

@@ -186,13 +186,11 @@ export async function loginUser(email, password) {
       if (u) {
         const metadata = u.user_metadata || {};
         const userEmail = u.email || email;
-        const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-        const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
         let resolvedRole = 'Member';
-        if (isSuper) {
-          resolvedRole = 'Admin';
-        } else if (metadata.role) {
-          resolvedRole = metadata.role.toLowerCase() === 'admin' ? 'Admin' : metadata.role;
+        if (metadata.role) {
+          const lowRole = metadata.role.toLowerCase();
+          if (lowRole === 'admin') resolvedRole = 'Admin';
+          else if (lowRole === 'staff') resolvedRole = 'Staff';
         }
         const stats = {
           id: u.id,
@@ -237,13 +235,11 @@ export async function signupUser(email, password, fullName, locality) {
       if (u) {
         const metadata = u.user_metadata || {};
         const userEmail = u.email || email;
-        const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-        const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
         let resolvedRole = 'Member';
-        if (isSuper) {
-          resolvedRole = 'Admin';
-        } else if (metadata.role) {
-          resolvedRole = metadata.role.toLowerCase() === 'admin' ? 'Admin' : metadata.role;
+        if (metadata.role) {
+          const lowRole = metadata.role.toLowerCase();
+          if (lowRole === 'admin') resolvedRole = 'Admin';
+          else if (lowRole === 'staff') resolvedRole = 'Staff';
         }
         const stats = {
           id: u.id,
@@ -431,15 +427,11 @@ export async function getStoredUser() {
       .then((data) => {
         const u = data.user;
         if (u) {
-          const userEmail = u.email || localStorage.getItem('civicai_user_email') || '';
-          const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-          const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
-          
           let resolvedRole = 'Member';
-          if (isSuper) {
-            resolvedRole = 'Admin';
-          } else if (u.role) {
-            resolvedRole = u.role.toLowerCase() === 'admin' ? 'Admin' : u.role;
+          if (u.role) {
+            const lowRole = u.role.toLowerCase();
+            if (lowRole === 'admin') resolvedRole = 'Admin';
+            else if (lowRole === 'staff') resolvedRole = 'Staff';
           }
 
           const stats = {
@@ -477,14 +469,11 @@ export async function getStoredUser() {
     if (!u) return null;
 
     const userEmail = u.email || (!isServer ? localStorage.getItem('civicai_user_email') : '');
-    const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
-    const isSuper = superAdminEmail && userEmail && userEmail.toLowerCase() === superAdminEmail.toLowerCase();
-    
     let resolvedRole = 'Member';
-    if (isSuper) {
-      resolvedRole = 'Admin';
-    } else if (u.role) {
-      resolvedRole = u.role.toLowerCase() === 'admin' ? 'Admin' : u.role;
+    if (u.role) {
+      const lowRole = u.role.toLowerCase();
+      if (lowRole === 'admin') resolvedRole = 'Admin';
+      else if (lowRole === 'staff') resolvedRole = 'Staff';
     }
 
     const stats = {
