@@ -70,7 +70,12 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (authorized) {
       getStoredIssues().then(setIssues);
-      getAdminRequests().then(setRequests);
+      getAdminRequests()
+        .then((reqs) => setRequests(Array.isArray(reqs) ? reqs : []))
+        .catch((err) => {
+          console.warn('[FRONTEND WARNING] Failed to fetch admin requests in admin dashboard, defaulting to empty list:', err);
+          setRequests([]);
+        });
       getAllUsers().then(setUsersList);
     }
   }, [authorized, refreshTrigger]);

@@ -215,7 +215,12 @@ export const getAdminRequests = async (req, res, next) => {
       `)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation "public.admin_requests" does not exist')) {
+        return res.status(200).json([]);
+      }
+      throw error;
+    }
 
     const formatted = requests.map(r => ({
       id: r.id,

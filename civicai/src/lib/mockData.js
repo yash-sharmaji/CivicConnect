@@ -434,10 +434,12 @@ export async function getStoredUser() {
             else if (lowRole === 'staff') resolvedRole = 'Staff';
           }
 
+          const emailVal = u.email || (!isServer ? localStorage.getItem('civicai_user_email') : '') || '';
+
           const stats = {
             id: u.id,
             name: u.full_name || 'Citizen',
-            email: userEmail || '',
+            email: emailVal,
             avatar: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
             points: u.xp || 0,
             rank: getRankFromXP(u.xp || 0),

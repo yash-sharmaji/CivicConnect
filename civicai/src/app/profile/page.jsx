@@ -74,10 +74,16 @@ export default function ProfilePage() {
         setUserIssues(issues.filter(i => i.creator?.name === user.name));
       });
 
-      getAdminRequests().then((reqs) => {
-        const myReqs = reqs.filter((r) => r.email.toLowerCase() === user.email.toLowerCase());
-        setAdminRequests(myReqs);
-      });
+      getAdminRequests()
+        .then((reqs) => {
+          const validReqs = Array.isArray(reqs) ? reqs : [];
+          const myReqs = validReqs.filter((r) => r && r.email && r.email.toLowerCase() === user.email.toLowerCase());
+          setAdminRequests(myReqs);
+        })
+        .catch((err) => {
+          console.warn('[FRONTEND WARNING] Failed to fetch admin requests, defaulting to empty list:', err);
+          setAdminRequests([]);
+        });
     }
   }, [user, requestRefresh]);
 
@@ -223,6 +229,8 @@ export default function ProfilePage() {
   const inProgressCount = userIssues.filter(i => i.status === 'in-progress').length;
   const resolvedCount = userIssues.filter(i => i.status === 'resolved').length;
   
+  const superAdminEmail = process.env.NEXT_PUBLIC_INITIAL_SUPER_ADMIN_EMAIL;
+  const isSuper = user?.email && superAdminEmail && user.email.toLowerCase() === superAdminEmail.toLowerCase();
   const isAdmin = user?.role === 'Admin' || user?.role === 'admin';
 
   // Find latest request status
