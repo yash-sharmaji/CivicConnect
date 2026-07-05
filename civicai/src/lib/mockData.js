@@ -834,3 +834,68 @@ export async function demoteUser(userId) {
     return { success: true };
   }
 }
+
+// ==========================================
+// COMMUNITY DISCUSSIONS (localStorage only)
+// ==========================================
+
+const COMMUNITY_KEY = 'civicai_community_posts';
+
+function getCommunityPosts() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(COMMUNITY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCommunityPosts(posts) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(COMMUNITY_KEY, JSON.stringify(posts));
+}
+
+export function communityGetPosts() {
+  return getCommunityPosts();
+}
+
+export function communityCreatePost({ title, message, userName, userId }) {
+  const posts = getCommunityPosts();
+  const newPost = {
+    id: 'post-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    userId,
+    userName,
+    title: title.trim(),
+    message: message.trim(),
+    createdAt: new Date().toISOString(),
+    likes: []
+  };
+  posts.unshift(newPost);
+  saveCommunityPosts(posts);
+  return newPost;
+}
+
+export function communityDeletePost(postId, userId) {
+  let posts = getCommunityPosts();
+  const target = posts.find(p => p.id === postId);
+  if (!target) throw new Error('Post not found');
+  if (target.userId !== userId) throw new Error('Not authorized');
+  posts = posts.filter(p => p.id !== postId);
+  saveCommunityPosts(posts);
+}
+
+export function communityToggleLike(postId, userId) {
+  const posts = getCommunityPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) throw new Error('Post not found');
+  const idx = post.likes.indexOf(userId);
+  if (idx === -1) {
+    post.likes.push(userId);
+  } else {
+    post.likes.splice(idx, 1);
+  }
+  saveCommunityPosts(posts);
+  return post.likes.length;
+}
+

@@ -12,7 +12,8 @@ import {
   User, 
   Settings, 
   ShieldCheck,
-  Award
+  Award,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
@@ -24,6 +25,7 @@ export const Sidebar = () => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Report Issue', href: '/report', icon: PlusCircle },
     { name: 'City Map', href: '/map', icon: Map },
+    { name: 'Community', href: '/community', icon: MessageSquare },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
     { name: 'Notifications', href: '/notifications', icon: Bell, authRequired: true },
     { name: 'My Profile', href: '/profile', icon: User, authRequired: true },
